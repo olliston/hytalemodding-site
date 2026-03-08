@@ -1,6 +1,8 @@
+"use client";
+
 import { ReactNode } from "react";
 import { Info, AlertTriangle, XCircle, CheckCircle, GraduationCap} from "lucide-react";
-import { LuGraduationCap } from "react-icons/lu";
+import { useMessages } from "@/lib/hooks/useMessages";
 
 interface CalloutProps {
   type?: "info" | "warning" | "danger" | "success"| "lvl_beginner" | "lvl_intermediate" | "lvl_advanced" ;
@@ -31,17 +33,19 @@ const icons = {
   lvl_advanced: GraduationCap
 };
 
-const defaultTitles = {
-  info: "Info",
-  warning: "Warning",
-  danger: "Danger",
-  success: "Success",
-  lvl_beginner: "Level: Beginner",
-  lvl_intermediate:"Level: Intermediate",
-  lvl_advanced: "Level: Advanced",
-};
-
 export function Callout({ type = "info", title, children }: CalloutProps) {
+  const messages = useMessages();
+
+  const defaultTitles = {
+    info: messages.callout.defaultTitles.info,
+    warning: messages.callout.defaultTitles.warning,
+    danger: messages.callout.defaultTitles.danger,
+    success: messages.callout.defaultTitles.success,
+    lvl_beginner: messages.callout.defaultTitles.lvl_beginner,
+    lvl_intermediate: messages.callout.defaultTitles.lvl_intermediate,
+    lvl_advanced: messages.callout.defaultTitles.lvl_advanced,
+  };
+
   const Icon = icons[type];
   const displayTitle = title || defaultTitles[type];
 
