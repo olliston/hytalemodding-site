@@ -19,14 +19,65 @@ export const source = loader({
 // }
 
 function getEnglishPages() {
-  return source.getPages().filter((page) => page.locale === "en");
+  return source
+    .getPages()
+    .filter((page) => page.locale === "en")
+    .sort((a, b) => a.slugs.join("/").localeCompare(b.slugs.join("/")));
 }
 
 export function getLLMIndex(baseUrl: string) {
-  return getEnglishPages().map((page) => {
-    const desc = page.data.description ? `: ${page.data.description}` : "";
-    return `- [${page.data.title}](${baseUrl}${page.url})${desc}`;
-  });
+  const pages = getEnglishPages();
+
+  type Node = {
+    page?: (typeof pages)[number];
+    children: Map<string, Node>;
+  };
+
+  const root: Node = { children: new Map() };
+
+  for (const page of pages) {
+    let current = root;
+
+    for (const slug of page.slugs) {
+      if (!current.children.has(slug)) {
+        current.children.set(slug, { children: new Map() });
+      }
+
+      current = current.children.get(slug)!;
+    }
+
+    current.page = page;
+  }
+
+  const lines: string[] = [];
+
+  function walk(node: Node, depth: number, slug?: string) {
+    if (node.page) {
+      const indent = "  ".repeat(depth);
+      const desc = node.page.data.description
+        ? `: ${node.page.data.description}`
+        : "";
+
+      lines.push(
+        `${indent}- [${node.page.data.title}](${baseUrl}${node.page.url})${desc}`,
+      );
+    } else if (slug && node.children.size > 0) {
+      const indent = "  ".repeat(depth);
+      const label = slug
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      lines.push(`${indent}- ${label}`);
+    }
+
+    const hasEntry = node.page || (slug && node.children.size > 0);
+
+    for (const [key, child] of node.children) {
+      walk(child, hasEntry ? depth + 1 : depth, key);
+    }
+  }
+
+  walk(root, 0);
+  return lines;
 }
 
 export async function getLLMFullText() {
